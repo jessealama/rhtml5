@@ -42,28 +42,29 @@
     (define encoding #f)
     (define (foo foo-pos)
       (let-values ([(name value next-pos) (get-attribute foo-pos)])
-      (if (and (eq? name #f)
-               (eq? value #f))
-          (if (eq? need-pragma? #f)
-              (sniff (+ pos 1))
-              (if (eq? got-pragma? #f)
-                  (sniff (+ pos 1))
-                  (sniff (+ pos 1))))
-          (cond ((bytes=? name #"http-equiv")
-                 (set! got-pragma? #t))
-                ((bytes=? name #"content")
-                 (let ([encoding-from-meta (encoding-from-meta value)])
-                   (when encoding-from-meta
-                     (unless encoding
-                       (set! encoding encoding-from-meta)
-                       (set! need-pragma? #t)))))
-                ((bytes=? name #"charset")
-                 (set! encoding value)
-                 (set! need-pragma? #f))))))
+        (if (and (eq? name #f)
+                 (eq? value #f))
+            (if (eq? need-pragma? #f)
+                (sniff (+ pos 1))
+                (if (eq? got-pragma? #f)
+                    (sniff (+ pos 1))
+                    (sniff (+ pos 1))))
+            (cond ((bytes=? name #"http-equiv")
+                   (set! got-pragma? #t))
+                  ((bytes=? name #"content")
+                   (let ([encoding-from-meta (encoding-from-meta value)])
+                     (when encoding-from-meta
+                       (unless encoding
+                         (set! encoding encoding-from-meta)
+                         (set! need-pragma? #t)))))
+                  ((bytes=? name #"charset")
+                   (set! encoding value)
+                   (set! need-pragma? #f))))))
     (foo pos))
   (define (sniff pos)
     (let ([meta-match (regexp-match "<[mM][eE][tT][aA][ /](.*)" initial-segment pos)])
       (if (and (list? meta-match)
+               (= (length meta-match) 2)
                (bytes? (list-ref meta-match 2)))
           (encoding-from-meta (+ pos 7))
           (values "utf-8"
@@ -101,3 +102,46 @@
                                 "Don't know what to do; argument is neither a byte string nor a URL."
                                 "thing"
                                 thing))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Tests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module+ test
+  (require rackunit)
+
+  (define (test-html input-html input-encoding expected-encoding expected-confidence)
+    (let-values ([(encoding confidence) (sniff-encoding input-html
+                                                        #:encoding input-encoding)])
+    (check-equal? encoding expected-encoding)
+    (check-equal? confidence expected-confidence))))
+
+(module+ test
+  (check-exn exn:fail?
+             (lambda ()
+               (sniff-encoding "" #:encoding 5)))
+  ;; (test-html #f
+  ;;            "iso-8859-1"
+  ;;            "iso-8859-1"
+  ;;            'certain)
+  ;; (test-html #""
+  ;;            #f
+  ;;            "utf-8"
+  ;;            'tentative)
+  ;; (test-html #"<!--<meta charset=\"iso-8859-1\"/>"
+  ;;            #f
+  ;;            "iso-8859-1"
+  ;;            'certain)
+  (test-html #"<html><body><p>hi"
+             #f
+             "utf-8"
+             'certain)
+  (test-html #""
+             #f
+             "utf-8"
+             'certain)
+  ;; (test-html #"<meta charset=\"iso-8859-4\"/>"
+  ;;            #f
+  ;;            "iso-8859-4"
+  ;;            'certain)
+  )
