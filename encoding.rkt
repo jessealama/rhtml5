@@ -1,31 +1,8 @@
 #lang racket/base
 
-(require net/url-structs)
+(require net/url-structs
+         "./attrs.rkt")
 (provide sniff-encoding)
-
-(define </byte #\u003C) ;; <
-(define >/byte #\u003C) ;; >
-(define !/byte #\u0021) ;; !
-(define -/byte #\u002D) ;; -
-(define m/byte #\u004D) ;; m
-(define M/byte #\u006D) ;; M
-(define e/byte #\u0045) ;; e
-(define E/byte #\u0065) ;; E
-(define t/byte #\u0054) ;; t
-(define T/byte #\u0074) ;; T
-(define a/byte #\u0041) ;; a
-(define A/byte #\u0061) ;; A
-(define tab/byte #\u0009) ;; tab
-(define lf/byte #\u000A) ;; line feed
-(define ff/byte #\u000C) ;; form feed
-(define cr/byte #\u000D) ;; carriage return
-(define sp/byte #\u0020) ;; space
-(define slash/byte #\u002F) ;; slash
-(define whitespace-bytes (list tab/byte
-                               lf/byte
-                               ff/byte
-                               cr/byte
-                               sp/byte))
 
 (define (sniff-encoding/bytes bytestr)
   (define blen (bytes-length bytestr))
@@ -33,8 +10,6 @@
   (define initial-segment (subbytes bytestr
                                     0
                                     initial-segment-length))
-  (define (get-attribute pos)
-    (values #"q" #"frob" (+ pos 1)))
   (define (encoding-from-meta pos)
     "iso-8859-1")
   (define (sniff pos)
