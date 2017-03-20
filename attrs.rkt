@@ -9,11 +9,7 @@
   (if (> (+ pos 1) blen)
       #f
       (let ([b (bytes-ref bstr pos)])
-        (cond ((or (= b tab/byte)
-		   (= b lf/byte)
-		   (= b ff/byte)
-		   (= b cr/byte)
-		   (= b sp/byte))
+        (cond ([whitespace-byte? b]
                (consume-spaces bstr (+ pos 1)))
               ((not (= b =/byte))
                #f)
