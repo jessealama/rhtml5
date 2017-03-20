@@ -32,11 +32,7 @@
                       (not (string=? attr-name "")))
                  (values attr-name
 			 (value-helper (+ pos 1) "")))
-                ((or (= b tab/byte)
-                     (= b lf/byte)
-                     (= b ff/byte)
-                     (= b cr/byte)
-                     (= b sp/byte))
+                ((whitespace-byte? b)
                  (let ([new-pos (consume-spaces bstr (+ pos 1))])
                    (values attr-name
                            (if (integer? new-pos)
@@ -47,10 +43,14 @@
                  (values attr-name ""))
                 ((and (>= b 65) (<= b 90))
                  (name-helper (+ pos 1)
-			      (format "~a~a" attr-name (+ b 32))))
+			      (format "~a~a"
+				      attr-name
+				      (byte->string/utf-8 (+ b 32)))))
                 (else
                  (name-helper (+ pos 1)
-			      (format "~a~a" attr-name b)))))))
+			      (format "~a~a"
+				      attr-name
+				      (byte->string/utf-8 b))))))))
   (name-helper pos ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
