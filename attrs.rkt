@@ -17,8 +17,22 @@
                (+ pos 1))))))
 
 (define (extract-value bstr pos)
-  (let ([v "blog"])
-    (values v (+ pos (string-length v)))))
+  (define blen (bytes-length bstr))
+  (define (extract-value-helper pos quote-char attr-value)
+    (if (<= pos blen)
+	attr-value
+	(let ([b (bytes-ref bstr pos)])
+	  (cond ([whitespace-byte? b]
+		 (extract-value-helper (+ pos 1) quote-char attr-value))
+		([(quote-byte? b)]
+		 (if (byte? quote-char)
+		     (values attr-value (+ pos 1))
+		     (extract-value-helper (+ pos 1) b attr-value)))
+		([uppercase-letter? b]
+		 (extract-value-helper (+ pos 1) quote-char (format "~a~a" attr-value (lowercase-byte b))))
+		(else
+		 (extract-value-helper (+ pos 1) quote-char (format "~a~a" attr-value b)))))))
+  (extract-value-helper pos #f ""))
 
 (define (extract-name bstr pos)
   (define (name-helper pos attr-name)
